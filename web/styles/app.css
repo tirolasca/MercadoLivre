@@ -1,0 +1,72 @@
+/* Identidade visual: azul e amarelo, inspirada em marketplaces. Cores vêm de variáveis. */
+:root {
+  --ml-azul: #2d3277;
+  --ml-azul-claro: #3483fa;
+  --ml-amarelo: #ffe600;
+  --ml-fundo: #f5f6fa;
+  --ml-card: #ffffff;
+  --ml-borda: #e3e6ee;
+  --ml-texto: #1f2430;
+  --ml-suave: #6b7280;
+  --ml-ok: #0f9d58;
+  --ml-erro: #d93025;
+  --ml-aviso: #b26a00;
+  --ml-raio: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ml-fundo: #11131a; --ml-card: #1b1e29; --ml-borda: #2c3042;
+    --ml-texto: #e8eaf2; --ml-suave: #9aa1b5; --ml-azul: #aab4ff;
+  }
+}
+
+.block-container { padding-top: 1.6rem; padding-bottom: 3rem; max-width: 1240px; }
+h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* Cabeçalho de página */
+.ml-cabecalho { margin: 0 0 1.2rem 0; }
+.ml-cabecalho h1 { font-size: 1.7rem; margin: 0; color: var(--ml-texto); }
+.ml-cabecalho p { margin: .2rem 0 0 0; color: var(--ml-suave); font-size: .95rem; }
+
+/* Cards de indicador */
+.ml-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .9rem; margin-bottom: 1rem; }
+.ml-card {
+  background: var(--ml-card); border: 1px solid var(--ml-borda); border-radius: var(--ml-raio);
+  padding: 1rem 1.1rem; position: relative; overflow: hidden;
+}
+.ml-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--ml-amarelo); }
+.ml-card .rotulo { color: var(--ml-suave); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.ml-card .valor { color: var(--ml-texto); font-size: 1.6rem; font-weight: 700; margin-top: .15rem; word-break: break-word; }
+.ml-card .nota { color: var(--ml-suave); font-size: .78rem; margin-top: .1rem; }
+.ml-card.indisponivel { opacity: .75; }
+.ml-card.indisponivel::before { background: var(--ml-borda); }
+.ml-card.indisponivel .valor { color: var(--ml-suave); font-size: 1.05rem; }
+
+/* Selos de status */
+.ml-selo { display: inline-block; padding: .12rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+.ml-selo.ok { background: rgba(15,157,88,.14); color: var(--ml-ok); }
+.ml-selo.erro { background: rgba(217,48,37,.14); color: var(--ml-erro); }
+.ml-selo.aviso { background: rgba(178,106,0,.16); color: var(--ml-aviso); }
+.ml-selo.neutro { background: var(--ml-borda); color: var(--ml-suave); }
+
+/* Faixa de serviço indisponível */
+.ml-indisponivel {
+  border: 1px dashed var(--ml-borda); border-left: 4px solid var(--ml-aviso); border-radius: 10px;
+  padding: .7rem 1rem; color: var(--ml-texto); background: var(--ml-card); margin: .4rem 0 1rem 0;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] .ml-marca { font-weight: 800; font-size: 1.15rem; color: var(--ml-azul); }
+section[data-testid="stSidebar"] .ml-marca span { background: var(--ml-amarelo); color: #2d3277; padding: 0 .35rem; border-radius: 6px; margin-right: .3rem; }
+.ml-usuario { font-size: .85rem; color: var(--ml-suave); margin-bottom: .4rem; }
+
+/* Tabelas e botões */
+div[data-testid="stDataFrame"] { border: 1px solid var(--ml-borda); border-radius: 10px; overflow: hidden; }
+.stButton > button, .stFormSubmitButton > button { border-radius: 10px; font-weight: 600; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .block-container { padding-left: .8rem; padding-right: .8rem; }
+  .ml-cabecalho h1 { font-size: 1.35rem; }
+  .ml-card .valor { font-size: 1.3rem; }
+}

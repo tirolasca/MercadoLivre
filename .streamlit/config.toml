@@ -1,0 +1,17 @@
+[server]
+headless = true
+# Protege contra CSRF/clickjacking em hospedagem pública. Mantenha ligados.
+enableXsrfProtection = true
+enableCORS = true
+maxUploadSize = 5
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "viewer"
+showErrorDetails = false   # não mostra stack traces ao visitante
+
+[theme]
+primaryColor = "#3483fa"
+font = "sans serif"

@@ -1,0 +1,7 @@
+# Produção (Streamlit Community Cloud lê este arquivo): núcleo + interface web.
+# Só a CLI? Use: pip install -r requirements-cli.txt
+-r requirements-cli.txt
+
+streamlit>=1.67,<2   # interface web (a documentação recomenda fixar a versão principal)
+plotly>=7.1,<8       # gráficos interativos do dashboard
+pyvis>=0.3.2,<0.4    # visualização interativa do grafo (Neo4j)

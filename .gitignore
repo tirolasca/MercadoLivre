@@ -1,0 +1,23 @@
+# Segredos
+.env
+.env.*
+!.env.example
+secure-connect*.zip
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Gerados pela aplicação
+exportacoes/
+
+# Editores / SO
+.idea/
+.vscode/
+.DS_Store
+
+# Segredos do Streamlit (use .streamlit/secrets.toml.example como modelo)
+.streamlit/secrets.toml
