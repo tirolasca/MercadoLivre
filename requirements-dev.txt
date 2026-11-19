@@ -1,4 +1,4 @@
 -r requirements.txt
 pytest>=8
-fakeredis>=2.20
+fakeredis>=2.40.0
 mongomock>=4.1
