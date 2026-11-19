@@ -1,3 +1,4 @@
+
 """Conexões com MongoDB, Redis, Cassandra (DataStax Astra) e Neo4j (AuraDB).
 
 Todas são criadas sob demanda (lazy) e reaproveitadas durante a execução, então
@@ -39,7 +40,7 @@ def cassandra_keyspace() -> str:
 
 
 def _limite_pool(nome: str, padrao: int) -> int:
-    """Tamanho máximo do pool. Os planos gratuitos limitam conexões (Redis Cloud Free: 30)."""
+    """Tamanho máximo do pool. Os planos gratuitos limitam conexões."""
     try:
         return max(1, int(os.getenv(nome, padrao)))
     except ValueError:
@@ -84,17 +85,29 @@ def redis_cliente() -> "Redis":
         "health_check_interval": 30,
         "max_connections": _limite_pool("REDIS_MAX_CONNECTIONS", 10),
     }
+
     url = os.getenv("REDIS_URL")
     if url:
-        return redis.Redis(connection_pool=redis.ConnectionPool.from_url(url, **comum))
-    return redis.Redis(
-        connection_pool=redis.ConnectionPool(
-            host=os.getenv("REDIS_HOST", "localhost"),
-            port=int(os.getenv("REDIS_PORT", 6379)),
-            password=os.getenv("REDIS_PASSWORD") or None,
-            ssl=os.getenv("REDIS_SSL", "false").strip().lower() == "true",
-            **comum,
+        return redis.Redis(
+            connection_pool=redis.ConnectionPool.from_url(url, **comum)
         )
+
+    opcoes = {
+        "host": os.getenv("REDIS_HOST", "localhost"),
+        "port": int(os.getenv("REDIS_PORT", 6379)),
+        "password": os.getenv("REDIS_PASSWORD") or None,
+        **comum,
+    }
+
+    ssl_ativado = (
+        os.getenv("REDIS_SSL", "false").strip().lower() == "true"
+    )
+
+    if ssl_ativado:
+        opcoes["connection_class"] = redis.SSLConnection
+
+    return redis.Redis(
+        connection_pool=redis.ConnectionPool(**opcoes)
     )
 
 
@@ -133,6 +146,7 @@ def cassandra_cluster() -> "Cluster":
     token = os.getenv("ASTRA_DB_TOKEN")
     if not token:
         raise RuntimeError("Defina ASTRA_DB_TOKEN.")
+
     return Cluster(
         cloud={"secure_connect_bundle": _caminho_bundle()},
         auth_provider=PlainTextAuthProvider("token", token),
@@ -157,11 +171,12 @@ def neo4j_driver() -> "Driver":
     uri, senha = os.getenv("NEO4J_URI"), os.getenv("NEO4J_PASSWORD")
     if not uri or not senha:
         raise RuntimeError("Defina NEO4J_URI e NEO4J_PASSWORD.")
+
     return GraphDatabase.driver(
         uri,
         auth=(os.getenv("NEO4J_USERNAME", "neo4j"), senha),
         connection_timeout=TIMEOUT_S,
-        max_transaction_retry_time=3,  # o padrão (30 s) trava a tela quando o Aura está pausado
+        max_transaction_retry_time=3,
         max_connection_pool_size=_limite_pool("NEO4J_MAX_POOL", 10),
     )
 
@@ -178,13 +193,16 @@ def fechar_conexoes() -> None:
     if mongo_cliente.cache_info().currsize:
         mongo_cliente().close()
         mongo_cliente.cache_clear()
+
     if redis_cliente.cache_info().currsize:
         redis_cliente().close()
         redis_cliente.cache_clear()
+
     if cassandra_cluster.cache_info().currsize:
         cassandra_cluster().shutdown()
         cassandra_sessao.cache_clear()
         cassandra_cluster.cache_clear()
+
     if neo4j_driver.cache_info().currsize:
         neo4j_driver().close()
         neo4j_driver.cache_clear()
