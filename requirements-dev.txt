@@ -1,4 +1,4 @@
 -r requirements.txt
-pytest>=8
+pytest>=9.2.0
 fakeredis>=2.20
 mongomock>=4.1
