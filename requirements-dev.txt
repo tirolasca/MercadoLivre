@@ -1,4 +1,4 @@
 -r requirements.txt
 pytest>=8
 fakeredis>=2.20
-mongomock>=4.1
+mongomock>=4.3.0
