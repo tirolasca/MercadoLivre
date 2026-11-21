@@ -15,12 +15,12 @@ if str(RAIZ) not in sys.path:
 
 import streamlit as st  # noqa: E402
 
-st.set_page_config(page_title="Mercado Livre — Persistência Poliglota", page_icon="🛒", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Mercado Livre — Persistência Poliglota", page_icon=":material/storefront:", layout="wide", initial_sidebar_state="auto")
 
 from mercadolivre import config  # noqa: E402
 from web import state  # noqa: E402
 from web.auth.permissoes import Papel, tem  # noqa: E402
-from web.components import sidebar, tema  # noqa: E402
+from web.components import cards, sidebar, tema  # noqa: E402
 
 
 @st.cache_resource(show_spinner=False)
@@ -34,25 +34,30 @@ def _configurar() -> list[str]:
 
 _configurar()
 tema.aplicar()
+# Marca fixa no topo da barra lateral, acima do menu (no celular vira o ícone quando recolhida).
+st.logo(str(RAIZ / "web" / "styles" / "logo.svg"), icon_image=str(RAIZ / "web" / "styles" / "logo-icone.svg"), size="large")
 ator = state.ator_atual()
 
+# ATENÇÃO: a pasta das páginas NÃO pode se chamar "pages". Com esse nome o Streamlit a descobre sozinho
+# e, num link direto (ex.: /pedidos) como primeiro acesso após subir o servidor, executa a página sem
+# passar por este arquivo, causando ModuleNotFoundError: No module named 'web'.
 PAGINAS = [
-    ("pages/dashboard.py", "Dashboard", "📊", "dashboard", Papel.VISITANTE),
-    ("pages/produtos.py", "Produtos", "📦", "produtos", Papel.VISITANTE),
-    ("pages/vendedores.py", "Vendedores", "🏪", "vendedores", Papel.VISITANTE),
-    ("pages/usuarios.py", "Usuários", "👤", "usuarios", Papel.USUARIO),
-    ("pages/pedidos.py", "Pedidos", "🧾", "pedidos", Papel.USUARIO),
-    ("pages/sessoes.py", "Sessões e cache", "⚡", "sessoes", Papel.VISITANTE),
-    ("pages/historico.py", "Histórico de compras", "🗂️", "historico", Papel.VISITANTE),
-    ("pages/grafo.py", "Grafo", "🕸️", "grafo", Papel.VISITANTE),
-    ("pages/diagnostico.py", "Diagnóstico", "🩺", "diagnostico", Papel.VISITANTE),
+    ("paginas/dashboard.py", "Dashboard", ":material/dashboard:", "dashboard", Papel.VISITANTE),
+    ("paginas/produtos.py", "Produtos", ":material/inventory_2:", "produtos", Papel.VISITANTE),
+    ("paginas/vendedores.py", "Vendedores", ":material/storefront:", "vendedores", Papel.VISITANTE),
+    ("paginas/usuarios.py", "Usuários", ":material/group:", "usuarios", Papel.USUARIO),
+    ("paginas/pedidos.py", "Pedidos", ":material/receipt_long:", "pedidos", Papel.USUARIO),
+    ("paginas/sessoes.py", "Sessões e cache", ":material/bolt:", "sessoes", Papel.VISITANTE),
+    ("paginas/historico.py", "Histórico de compras", ":material/history:", "historico", Papel.VISITANTE),
+    ("paginas/grafo.py", "Grafo", ":material/hub:", "grafo", Papel.VISITANTE),
+    ("paginas/diagnostico.py", "Diagnóstico", ":material/monitor_heart:", "diagnostico", Papel.VISITANTE),
 ]
 
 sidebar.renderizar(ator)
 
 if ator.papel == Papel.VISITANTE and not config.modo_demo():
-    st.title("Mercado Livre — Persistência Poliglota")
-    st.info("Entre com a sua conta na barra lateral para continuar.")
+    cards.cabecalho("Mercado Livre — Persistência Poliglota", "Marketplace sobre MongoDB, Redis, Cassandra e Neo4j.", "shopping-bag")
+    cards.estado_vazio("Entre para continuar", "Use o formulário de login na barra lateral. Em telas pequenas, abra o menu no canto superior esquerdo.", "log-in")
     st.stop()
 
 paginas = [st.Page(arq, title=nome, icon=icone, url_path=url) for arq, nome, icone, url, minimo in PAGINAS if tem(ator, minimo)]

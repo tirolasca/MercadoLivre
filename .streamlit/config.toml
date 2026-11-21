@@ -4,6 +4,8 @@ headless = true
 enableXsrfProtection = true
 enableCORS = true
 maxUploadSize = 5
+# Serve web/static/ em /app/static (usado pela fonte Inter, hospedada no projeto: sem Google Fonts).
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
@@ -13,5 +15,27 @@ toolbarMode = "viewer"
 showErrorDetails = false   # não mostra stack traces ao visitante
 
 [theme]
-primaryColor = "#3483fa"
-font = "sans serif"
+# Os tokens de cor da interface vivem em web/styles/app.css; aqui ficam só os widgets nativos.
+primaryColor = "#2968d8"
+font = "Inter"
+baseRadius = "0.75rem"
+buttonRadius = "0.65rem"
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/inter-latin-wght-normal.woff2"
+weight = "100 900"
+style = "normal"
+
+[theme.light]
+backgroundColor = "#f6f7fb"
+secondaryBackgroundColor = "#eff1f8"
+textColor = "#141a2e"
+borderColor = "#e2e6f0"
+
+[theme.dark]
+primaryColor = "#3a76e6"
+backgroundColor = "#0c0f1f"
+secondaryBackgroundColor = "#1b2140"
+textColor = "#eceffa"
+borderColor = "#262d4d"

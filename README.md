@@ -87,10 +87,19 @@ No Windows (PowerShell): `$env:APP_ENV="development"; streamlit run web/app.py`.
 
 Para o ambiente de produção, defina as contas reais (veja [`docs/DEPLOY.md`](docs/DEPLOY.md)). Gere o hash de uma senha com `python -m web.auth.senhas`.
 
+### Design e experiência de uso
+
+- **Tokens de design** em `web/styles/app.css`: cores, espaços, raios, sombras e tempos de animação são variáveis; o modo escuro segue o sistema operacional.
+- **Ícones Lucide** (licença ISC) embutidos como SVG em `web/components/icones.py`, sem CDN nem dependência nova. Os widgets nativos do Streamlit (menu, botões) usam Material Symbols, que já vêm no Streamlit. Para adicionar um ícone, copie o conteúdo do SVG de [lucide.dev](https://lucide.dev/icons) para `_ICONES`.
+- **Movimento discreto**: entrada dos cards, hover, feedback de clique e *skeleton* durante o carregamento do dashboard. `prefers-reduced-motion` desliga as animações.
+- **Estados úteis**: indicador indisponível quando um banco está fora, estados vazios com orientação do próximo passo e toasts de sucesso (guardados na sessão para sobreviverem ao `st.rerun()`).
+- **Responsivo**: a barra lateral começa recolhida em telas pequenas, os cards se reorganizam em 2 colunas no celular e as tabelas rolam dentro do próprio cartão.
+- **Gráficos** (`web/components/graficos.py`): estilo único, sem barra de ferramentas, valores em pt-BR.
+
 ### Arquitetura em camadas
 
 ```
-Interface web (web/pages, web/components)
+Interface web (web/paginas, web/components)
         ↓
 Camada de serviços (web/services): papéis, erros, mascaramento, disjuntor
         ↓
@@ -135,11 +144,11 @@ MercadoLivre/
 ├── web/                       # interface web (Streamlit)
 │   ├── app.py                 # entrada: navegação, login e papéis
 │   ├── state.py               # liga o session_state ao token de sessão
-│   ├── pages/                 # 9 páginas
+│   ├── paginas/               # 9 páginas (não usar o nome "pages": veja web/app.py)
 │   ├── services/              # camada de serviços (papéis, erros, disjuntor)
 │   ├── auth/                  # senhas, contas, sessão no servidor, permissões
-│   ├── components/            # cards, tema, grafo (PyVis), sidebar, layout
-│   ├── styles/app.css
+│   ├── components/            # cards, ícones, gráficos, feedback, tema, grafo (PyVis), sidebar, layout
+│   ├── styles/                # app.css, logo.svg, logo-icone.svg
 │   └── utils/formatacao.py    # moeda, máscaras, HTML seguro
 ├── .streamlit/                # config.toml e secrets.toml.example
 ├── docs/                      # GUIA_APRESENTACAO.md e DEPLOY.md
@@ -317,7 +326,9 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Os testes usam `fakeredis` e `mongomock`, portanto rodam sem nenhum banco real. Cobrem validadores, regras de pedido e estoque, sessões (login, bloqueio, TTL), o fluxo de cache e a geração das consultas CQL e Cypher. Os testes da web (`tests/web_app`) cobrem configuração, autenticação e autorização, isolamento entre usuários, mascaramento de dados, tratamento de falhas e comportamento com bancos indisponíveis, incluindo as páginas executadas com `streamlit.testing.v1.AppTest`.
+Os testes usam `fakeredis` e `mongomock`, portanto rodam sem nenhum banco real. Cobrem validadores, regras de pedido e estoque, sessões (login, bloqueio, TTL), o fluxo de cache e a geração das consultas CQL e Cypher. Os testes da web (`tests/web_app`) cobrem configuração, autenticação e autorização, isolamento entre usuários, mascaramento de dados, tratamento de falhas e comportamento com bancos indisponíveis, incluindo as páginas executadas com `streamlit.testing.v1.AppTest`. `tests/web_app/test_componentes.py` cobre ícones, cards, estados vazios, toasts e a consistência do CSS.
+
+Testes automatizados não enxergam CSS. O visual (layout, modo escuro, celular) é conferido abrindo o app; `APP_ENV=development streamlit run web/app.py` basta.
 
 **Limites do que é testado:** Cassandra e Neo4j não têm simulador nos testes; a geração das consultas e a degradação sem o serviço são testadas, mas o comportamento contra Astra DB e AuraDB reais só pode ser validado com as suas credenciais. O `mongomock` não suporta `$multiply` com `Decimal128`, então o cálculo do valor em estoque é validado apenas no MongoDB real.
 

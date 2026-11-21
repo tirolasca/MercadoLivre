@@ -11,7 +11,7 @@ from web.components.layout import abrir_pagina
 from web.services import catalogo
 from web.utils.formatacao import formatar_cnpj, moeda
 
-ator = abrir_pagina("Vendedores", "Lojas do marketplace e seus produtos (MongoDB).")
+ator = abrir_pagina("Vendedores", "Lojas do marketplace e seus produtos (MongoDB).", icone="store")
 admin = tem(ator, Papel.ADMIN)
 
 termo = st.text_input("Pesquisar por loja ou CNPJ", max_chars=80)
@@ -60,6 +60,6 @@ if vendedores:
     with aba_excluir:
         alvo = st.selectbox("Vendedor a excluir", vendedores, format_func=lambda x: x["nome_loja"], key="excluir_vendedor")
         st.warning("A exclusão é permanente. Vendedores com produtos não podem ser excluídos.")
-        if pedir_confirmacao(f"vendedor_{alvo['id']}", f"Confirmo a exclusão de {alvo['nome_loja']}", "Excluir vendedor"):
+        if pedir_confirmacao(f"vendedor_{alvo['id']}", f"Excluir {alvo['nome_loja']}", "Excluir vendedor"):
             if resposta("MongoDB", catalogo.excluir_vendedor(ator, alvo["id"]), "Vendedor excluído."):
                 st.rerun()

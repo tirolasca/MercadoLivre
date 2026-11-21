@@ -11,7 +11,7 @@ from web.components.layout import abrir_pagina
 from web.services import historico
 from web.utils.formatacao import data_hora, mascara_cpf, moeda
 
-ator = abrir_pagina("Histórico de compras", "Cassandra: cada tabela foi desenhada para uma consulta, sem JOIN.")
+ator = abrir_pagina("Histórico de compras", "Cassandra: cada tabela foi desenhada para uma consulta, sem JOIN.", icone="history")
 admin, logado = tem(ator, Papel.ADMIN), tem(ator, Papel.USUARIO)
 
 aba_cat, aba_compras, aba_modelo = st.tabs(["Produtos por categoria", "Compras por usuário", "Modelagem"])
@@ -21,7 +21,7 @@ with aba_cat:
     cats = historico.categorias()
     if not cards.erro_resultado("Cassandra", cats):
         if not cats.dados:
-            st.info("Ainda não há produtos no Cassandra.")
+            cards.estado_vazio("Ainda não há produtos no Cassandra", "Carregue os dados de demonstração no fim da página para ver o histórico.", "history")
         else:
             a, b = st.columns([1, 2])
             categoria = a.selectbox("Categoria", cats.dados)
@@ -66,4 +66,4 @@ with aba_modelo:
     if admin:
         st.divider()
         if st.button("Carregar dados de demonstração (Cassandra)"):
-            resposta("Cassandra", historico.carregar_demonstracao(ator), "Dados de demonstração carregados.")
+            resposta("Cassandra", historico.carregar_demonstracao(ator), "Dados de demonstração carregados.", recarregar=False)

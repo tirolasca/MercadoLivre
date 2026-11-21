@@ -7,27 +7,41 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from web.components import icones
 from web.utils.formatacao import texto
 
 
-def cabecalho(titulo: str, subtitulo: str = "") -> None:
-    st.markdown(
-        f'<div class="ml-cabecalho"><h1>{texto(titulo)}</h1>' + (f"<p>{texto(subtitulo)}</p>" if subtitulo else "") + "</div>",
-        unsafe_allow_html=True,
-    )
+def cabecalho(titulo: str, subtitulo: str = "", icone: str | None = None) -> None:
+    ico = f'<div class="ico">{icones.svg(icone, 22)}</div>' if icone else ""
+    sub = f"<p>{texto(subtitulo)}</p>" if subtitulo else ""
+    st.markdown(f'<div class="ml-cabecalho">{ico}<div><h1>{texto(titulo)}</h1>{sub}</div></div>', unsafe_allow_html=True)
 
 
 def cards(itens: list[dict[str, Any]]) -> None:
-    """Cada item: ``rotulo``, ``valor`` (``None`` = indisponível), ``nota`` opcional."""
+    """Cada item: ``rotulo``, ``valor`` (``None`` = indisponível), ``nota``, ``icone``, ``tom`` (``ok``/``erro``) e ``destaque`` opcionais."""
     html = ['<div class="ml-cards">']
     for it in itens:
         indisponivel = it.get("valor") is None
-        classe = "ml-card indisponivel" if indisponivel else "ml-card"
+        classes = ["ml-card"]
+        if indisponivel:
+            classes.append("indisponivel")
+        else:
+            classes += [c for c in (it.get("tom"), "destaque" if it.get("destaque") else None) if c]
         valor = "Indisponível" if indisponivel else texto(it["valor"])
         nota = f'<div class="nota">{texto(it["nota"])}</div>' if it.get("nota") else ""
-        html.append(f'<div class="{classe}"><div class="rotulo">{texto(it["rotulo"])}</div><div class="valor">{valor}</div>{nota}</div>')
+        ico = f'<span class="ico">{icones.svg(it["icone"], 16)}</span>' if it.get("icone") else ""
+        html.append(
+            f'<div class="{" ".join(classes)}"><div class="topo"><span class="rotulo">{texto(it["rotulo"])}</span>{ico}</div>'
+            f'<div class="valor">{valor}</div>{nota}</div>'
+        )
     html.append("</div>")
     st.markdown("".join(html), unsafe_allow_html=True)
+
+
+def cards_carregando(quantidade: int = 4) -> None:
+    """Esqueleto dos cards enquanto os bancos respondem (troque por ``cards`` ao terminar)."""
+    um = '<div class="ml-card skel"><div class="ml-skel linha-a"></div><div class="ml-skel linha-b"></div></div>'
+    st.markdown(f'<div class="ml-cards" aria-busy="true" aria-label="Carregando indicadores">{um * quantidade}</div>', unsafe_allow_html=True)
 
 
 def selo(rotulo: str, tipo: str = "neutro") -> str:
@@ -36,8 +50,19 @@ def selo(rotulo: str, tipo: str = "neutro") -> str:
 
 
 def indisponivel(servico: str, mensagem: str | None = None) -> None:
+    corpo = texto(mensagem or "Esta parte da página volta quando o serviço responder.")
     st.markdown(
-        f'<div class="ml-indisponivel"><b>{texto(servico)} indisponível.</b> {texto(mensagem or "Esta parte da página volta quando o serviço responder.")}</div>',
+        f'<div class="ml-indisponivel" role="status"><span class="ico">{icones.svg("cloud-off", 20)}</span>'
+        f"<div><b>{texto(servico)} indisponível.</b> {corpo}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def estado_vazio(titulo: str, orientacao: str = "", icone: str = "inbox") -> None:
+    """Estado vazio com orientação do que fazer em seguida."""
+    dica = f'<div class="texto">{texto(orientacao)}</div>' if orientacao else ""
+    st.markdown(
+        f'<div class="ml-vazio" role="status"><span class="ico">{icones.svg(icone, 22)}</span><div class="titulo">{texto(titulo)}</div>{dica}</div>',
         unsafe_allow_html=True,
     )
 
@@ -53,10 +78,10 @@ def erro_resultado(servico: str, resultado: Any) -> bool:
     return True
 
 
-def tabela(linhas: list[dict[str, Any]], colunas: dict[str, str], vazio: str = "Nada para mostrar.", altura: int | None = None) -> None:
+def tabela(linhas: list[dict[str, Any]], colunas: dict[str, str], vazio: str = "Nada para mostrar.", altura: int | None = None, filtrada: bool = False) -> None:
     """Tabela legível. ``colunas`` mapeia chave -> título exibido (na ordem desejada)."""
     if not linhas:
-        st.info(vazio)
+        estado_vazio(vazio, "Ajuste os filtros ou volte mais tarde." if filtrada else "")
         return
     df = pd.DataFrame([{titulo: l.get(chave) for chave, titulo in colunas.items()} for l in linhas])
     opcoes = {"height": altura} if altura else {}

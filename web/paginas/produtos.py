@@ -8,10 +8,11 @@ from web.auth.permissoes import Papel, tem
 from web.components import cards
 from web.components.feedback import pedir_confirmacao, resposta
 from web.components.layout import abrir_pagina
+from web.components.paginacao import paginar
 from web.services import catalogo
 from web.utils.formatacao import moeda
 
-ator = abrir_pagina("Produtos", "Catálogo do MongoDB: busca, filtros, estoque e preços.")
+ator = abrir_pagina("Produtos", "Catálogo do MongoDB: busca, filtros, estoque e preços.", icone="package")
 admin = tem(ator, Papel.ADMIN)
 
 ORDENS = {"titulo": "Título (A-Z)", "menor_preco": "Menor preço", "maior_preco": "Maior preço", "maior_estoque": "Maior estoque", "mais_vendidos": "Mais vendidos"}
@@ -33,12 +34,9 @@ if cards.erro_resultado("MongoDB", res):
     st.stop()
 produtos = res.dados
 
-# Paginação
-por_pagina = 10
-paginas = max(1, -(-len(produtos) // por_pagina))
-pagina = st.number_input("Página", min_value=1, max_value=paginas, value=1, step=1) if paginas > 1 else 1
-st.caption(f"{len(produtos)} produto(s) • página {pagina} de {paginas}")
-visiveis = produtos[(pagina - 1) * por_pagina: pagina * por_pagina]
+# Paginação (volta à página 1 quando um filtro muda)
+_, _, fatia = paginar(len(produtos), 10, "produtos", (termo, categoria, loja, ordem))
+visiveis = produtos[fatia]
 cards.tabela(
     [{**p, "preco": moeda(p["preco"])} for p in visiveis],
     {"titulo": "Título", "preco": "Preço", "estoque": "Estoque", "vendidos": "Vendidos", "categoria": "Categoria", "loja": "Loja", "status": "Status"},
@@ -65,7 +63,7 @@ aba_novo, aba_editar, aba_excluir = st.tabs(["Cadastrar", "Editar / estoque", "E
 with aba_novo:
     ativas = {v["nome_loja"]: v["id"] for v in lojas.dados if v["status"] == "ativo"}
     if not ativas:
-        st.info("Cadastre um vendedor ativo antes de criar produtos.")
+        cards.estado_vazio("Cadastre um vendedor ativo primeiro", "Todo produto pertence a uma loja. Crie o vendedor na página Vendedores e volte aqui.", "store")
     else:
         with st.form("novo_produto", clear_on_submit=True):
             vendedor = st.selectbox("Vendedor", list(ativas))
@@ -99,7 +97,7 @@ with aba_excluir:
     if produtos:
         alvo = st.selectbox("Produto a excluir", produtos, format_func=lambda p: p["titulo"], key="excluir_produto")
         st.warning("A exclusão é permanente. Produtos com histórico de pedidos não podem ser excluídos.")
-        if pedir_confirmacao(f"produto_{alvo['id']}", f"Confirmo a exclusão de “{alvo['titulo']}”", "Excluir produto"):
+        if pedir_confirmacao(f"produto_{alvo['id']}", f"Excluir “{alvo['titulo']}”", "Excluir produto"):
             if resposta("MongoDB", catalogo.excluir_produto(ator, alvo["id"]), "Produto excluído."):
                 st.rerun()
 

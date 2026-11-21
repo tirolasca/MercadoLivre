@@ -10,7 +10,7 @@ from web.components.feedback import resposta
 from web.components.layout import abrir_pagina
 from web.services import sessoes
 
-ator = abrir_pagina("Sessões e cache", "Redis: chave-valor em memória com expiração automática (TTL).")
+ator = abrir_pagina("Sessões e cache", "Redis: chave-valor em memória com expiração automática (TTL).", icone="zap")
 admin, logado = tem(ator, Papel.ADMIN), tem(ator, Papel.USUARIO)
 
 estado = sessoes.estado()
@@ -50,9 +50,9 @@ with aba_ttl:
             contagem()
             a, b = st.columns(2)
             if a.button("Renovar prazo (ação do usuário)"):
-                resposta("Redis", sessoes.renovar_sessao_demo(ator, chave), "Prazo renovado.", invalidar_cache=False)
+                resposta("Redis", sessoes.renovar_sessao_demo(ator, chave), "Prazo renovado.", invalidar_cache=False, recarregar=False)
             if b.button("Encerrar sessão (logout)"):
-                resposta("Redis", sessoes.encerrar_sessao_demo(ator, chave), "Sessão encerrada.", invalidar_cache=False)
+                resposta("Redis", sessoes.encerrar_sessao_demo(ator, chave), "Sessão encerrada.", invalidar_cache=False, recarregar=False)
                 st.session_state.pop("demo_chave", None)
 
 # ----------------------------------------------------------------------------
@@ -87,7 +87,7 @@ with aba_fluxo:
                         elif etapa == "aviso":
                             st.warning(msg)
                         else:
-                            st.write(f"✔ {msg}")
+                            st.write(f":material/check: {msg}")
                     status.update(label="Fluxo concluído", state="complete")
                 else:
                     status.update(label="Falhou", state="error")

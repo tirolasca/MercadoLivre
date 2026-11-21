@@ -11,7 +11,7 @@ from web.components.layout import abrir_pagina
 from web.services import catalogo
 from web.utils.formatacao import data_hora, moeda
 
-ator = abrir_pagina("Pedidos", "Compras registradas no MongoDB.", minimo=Papel.USUARIO)
+ator = abrir_pagina("Pedidos", "Compras registradas no MongoDB.", minimo=Papel.USUARIO, icone="receipt-text")
 admin = tem(ator, Papel.ADMIN)
 
 # ----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ disponiveis = [p for p in produtos.dados if p["status"] == "ativo" and p["estoqu
 if not compradores.dados:
     st.info("Não há cadastro de comprador vinculado à sua conta. Peça a um administrador para cadastrá-lo.")
 elif not disponiveis:
-    st.info("Nenhum produto disponível para compra.")
+    cards.estado_vazio("Nenhum produto disponível para compra", "Quando houver produtos ativos com estoque, eles aparecem aqui.", "package-search")
 else:
     comprador = st.selectbox("Comprador", compradores.dados, format_func=lambda u: f"{u['nome']} {u['sobrenome']}", disabled=not admin)
     produto = st.selectbox("Produto", disponiveis, format_func=lambda p: f"{p['titulo']} — {moeda(p['preco'])} ({p['estoque']} em estoque)")

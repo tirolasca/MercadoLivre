@@ -87,7 +87,7 @@ def pagina(monkeypatch, mongo, redis_falso):
     from streamlit.testing.v1 import AppTest
 
     def abrir(nome: str, token: str | None = None, timeout: int = 30):
-        at = AppTest.from_file(str(RAIZ / "web" / "pages" / f"{nome}.py"), default_timeout=timeout)
+        at = AppTest.from_file(str(RAIZ / "web" / "paginas" / f"{nome}.py"), default_timeout=timeout)
         if token:
             at.session_state[state.CHAVE_TOKEN] = token
         return at.run()

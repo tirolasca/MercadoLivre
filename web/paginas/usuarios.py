@@ -11,7 +11,7 @@ from web.components.layout import abrir_pagina
 from web.services import catalogo
 from web.utils.formatacao import data_hora, formatar_cpf
 
-ator = abrir_pagina("Usuários", "Cadastro de compradores (MongoDB).", minimo=Papel.USUARIO)
+ator = abrir_pagina("Usuários", "Cadastro de compradores (MongoDB).", minimo=Papel.USUARIO, icone="users")
 admin = tem(ator, Papel.ADMIN)
 
 termo = st.text_input("Pesquisar por nome, e-mail ou CPF", max_chars=80) if admin else ""
@@ -76,6 +76,6 @@ if usuarios:
     with aba_excluir:
         alvo = st.selectbox("Usuário a excluir", usuarios, format_func=lambda x: f"{x['nome']} {x['sobrenome']}", key="excluir_usuario")
         st.warning("A exclusão é permanente e remove também os favoritos. Usuários com pedidos não podem ser excluídos.")
-        if pedir_confirmacao(f"usuario_{alvo['id']}", f"Confirmo a exclusão de {alvo['nome']} {alvo['sobrenome']}", "Excluir usuário"):
+        if pedir_confirmacao(f"usuario_{alvo['id']}", f"Excluir {alvo['nome']} {alvo['sobrenome']}", "Excluir usuário"):
             if resposta("MongoDB", catalogo.excluir_usuario(ator, alvo["id"]), "Usuário excluído."):
                 st.rerun()

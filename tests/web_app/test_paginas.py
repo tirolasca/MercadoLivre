@@ -67,7 +67,7 @@ def test_dashboard_usa_dados_reais(pagina, semeado, token):
 # Autorização: a tela não concede nada que o servidor não concedeu
 # ----------------------------------------------------------------------------
 def test_editar_o_session_state_nao_eleva_permissao(pagina, semeado):
-    at = AppTest.from_file(str(state.__file__).replace("state.py", "pages/usuarios.py"), default_timeout=30)
+    at = AppTest.from_file(str(state.__file__).replace("state.py", "paginas/usuarios.py"), default_timeout=30)
     at.session_state["papel"] = "admin"
     at.session_state["ator"] = "admin"
     at.session_state[state.CHAVE_TOKEN] = "token-forjado"
@@ -125,13 +125,21 @@ def test_formulario_de_produto_mostra_erro_de_validacao(pagina, semeado, token):
 
 def test_exclusao_exige_confirmacao_explicita(pagina, semeado, token):
     at = pagina("produtos", token("admin"))
-    botao = por_rotulo(at.button, "Excluir produto")
-    assert botao.disabled  # sem marcar a confirmação, o botão não funciona
-    at.checkbox[0].check().run()
-    botao = por_rotulo(at.button, "Excluir produto")
-    assert not botao.disabled
-    botao.click().run()
+    por_rotulo(at.button, "Excluir produto").click().run()
+    # 1ª etapa só abre o alerta: nada foi excluído e o botão definitivo ainda não foi acionado
+    assert catalogo_dados.colecao("produtos").count_documents({}) == 1
+    assert "Esta ação não pode ser desfeita" in textos(at)
+    por_rotulo(at.button, "Excluir definitivamente").click().run()
     assert catalogo_dados.colecao("produtos").count_documents({}) == 0
+
+
+def test_exclusao_pode_ser_cancelada(pagina, semeado, token):
+    at = pagina("produtos", token("admin"))
+    por_rotulo(at.button, "Excluir produto").click().run()
+    por_rotulo(at.button, "Cancelar").click().run()
+    assert catalogo_dados.colecao("produtos").count_documents({}) == 1
+    assert "Excluir definitivamente" not in [b.label for b in at.button]
+    assert "Excluir produto" in [b.label for b in at.button]
 
 
 def test_usuario_faz_pedido_apenas_em_seu_nome(pagina, semeado, token):

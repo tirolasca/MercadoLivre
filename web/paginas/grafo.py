@@ -12,7 +12,7 @@ from web.components.layout import abrir_pagina
 from web.services import grafo
 from web.utils.formatacao import data_hora, mascara_cpf, moeda
 
-ator = abrir_pagina("Grafo de relacionamentos", "Neo4j: nós e relacionamentos reais entre usuários, compras, produtos, lojas e categorias.")
+ator = abrir_pagina("Grafo de relacionamentos", "Neo4j: nós e relacionamentos reais entre usuários, compras, produtos, lojas e categorias.", icone="waypoints")
 admin, logado = tem(ator, Papel.ADMIN), tem(ator, Papel.USUARIO)
 
 resumo = grafo.resumo()
@@ -21,7 +21,7 @@ if cards.erro_resultado("Neo4j", resumo):
 nos_total = {n["nome"]: n["total"] for n in resumo.dados["nos"]}
 cards.cards([{"rotulo": grafo_pyvis.ROTULOS.get(n["nome"], n["nome"]), "valor": n["total"], "nota": "nós"} for n in resumo.dados["nos"]] + [{"rotulo": r["nome"], "valor": r["total"], "nota": "relacionamentos"} for r in resumo.dados["relacoes"]])
 if not nos_total:
-    st.info("O grafo está vazio." + (" Use o botão no fim da página para carregar os dados de demonstração." if admin else ""))
+    cards.estado_vazio("O grafo está vazio", "Use o botão no fim da página para carregar os dados de demonstração." if admin else "Peça a um administrador para carregar os dados de demonstração.", "waypoints")
 
 aba_grafo, aba_prod, aba_lojas, aba_compras = st.tabs(["Visualização", "Produtos", "Lojas", "Compras (caminho)"])
 
