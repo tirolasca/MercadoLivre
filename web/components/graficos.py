@@ -18,7 +18,7 @@ def estilizar(fig: Any, altura: int = 320, titulo_x: str | None = None, titulo_y
     """Aplica o visual padrão e devolve a própria figura."""
     fig.update_layout(
         height=altura,
-        margin=dict(l=4, r=18, t=8, b=4),
+        margin=dict(l=12, r=20, t=16, b=28),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family=_FONTE, size=12),

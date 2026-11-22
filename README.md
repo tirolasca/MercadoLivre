@@ -93,7 +93,7 @@ Para o ambiente de produção, defina as contas reais (veja [`docs/DEPLOY.md`](d
 - **Ícones Lucide** (licença ISC) embutidos como SVG em `web/components/icones.py`, sem CDN nem dependência nova. Os widgets nativos do Streamlit (menu, botões) usam Material Symbols, que já vêm no Streamlit. Para adicionar um ícone, copie o conteúdo do SVG de [lucide.dev](https://lucide.dev/icons) para `_ICONES`.
 - **Movimento discreto**: entrada dos cards, hover, feedback de clique e *skeleton* durante o carregamento do dashboard. `prefers-reduced-motion` desliga as animações.
 - **Estados úteis**: indicador indisponível quando um banco está fora, estados vazios com orientação do próximo passo e toasts de sucesso (guardados na sessão para sobreviverem ao `st.rerun()`).
-- **Responsivo**: a barra lateral começa recolhida em telas pequenas, os cards se reorganizam em 2 colunas no celular e as tabelas rolam dentro do próprio cartão.
+- **Responsivo** (320 px a ultrawide): a barra lateral começa recolhida em telas pequenas; a grade de cards usa *container queries* (reage à largura do conteúdo, não da janela: 2 colunas no celular, 3×2 no tablet, 6 em linha em telas largas, sem card órfão); a paginação cabe em uma linha; e as tabelas rolam dentro do próprio cartão.
 - **Gráficos** (`web/components/graficos.py`): estilo único, sem barra de ferramentas, valores em pt-BR.
 
 ### Arquitetura em camadas

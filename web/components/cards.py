@@ -78,11 +78,26 @@ def erro_resultado(servico: str, resultado: Any) -> bool:
     return True
 
 
-def tabela(linhas: list[dict[str, Any]], colunas: dict[str, str], vazio: str = "Nada para mostrar.", altura: int | None = None, filtrada: bool = False) -> None:
-    """Tabela legível. ``colunas`` mapeia chave -> título exibido (na ordem desejada)."""
+def tabela(linhas: list[dict[str, Any]], colunas: dict[str, str], vazio: str = "Nada para mostrar.", altura: int | None = None, filtrada: bool = False, larguras: dict[str, str] | None = None) -> None:
+    """Tabela legível. ``colunas`` mapeia chave -> título exibido (na ordem desejada).
+
+    ``larguras`` (opcional) mapeia chave -> ``"small"``/``"medium"``/``"large"`` para colunas de texto longo."""
     if not linhas:
         estado_vazio(vazio, "Ajuste os filtros ou volte mais tarde." if filtrada else "")
         return
     df = pd.DataFrame([{titulo: l.get(chave) for chave, titulo in colunas.items()} for l in linhas])
     opcoes = {"height": altura} if altura else {}
+    if larguras:
+        opcoes["column_config"] = {colunas[k]: st.column_config.TextColumn(width=w) for k, w in larguras.items() if k in colunas}
     st.dataframe(df, hide_index=True, width="stretch", **opcoes)
+
+
+def tabela_estatica(linhas: list[dict[str, Any]], colunas: dict[str, str]) -> None:
+    """Tabela de referência (poucas linhas, texto longo): quebra a linha em vez de truncar a célula.
+
+    A primeira coluna vira o rótulo da linha. Para listagens grandes e ordenáveis use ``tabela``."""
+    if not linhas:
+        estado_vazio("Nada para mostrar.")
+        return
+    df = pd.DataFrame([{titulo: l.get(chave) for chave, titulo in colunas.items()} for l in linhas])
+    st.table(df.set_index(df.columns[0]))

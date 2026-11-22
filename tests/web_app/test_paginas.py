@@ -208,7 +208,7 @@ def test_historico_busca_por_categoria_e_prefixo(pagina, semeado, monkeypatch):
     por_rotulo(at.text_input, "Prefixo do título (diferencia maiúsculas)").set_value("Te").run()
     assert ("MLB1648", "Te") in visto
     assert any("Teclado Gamer" in str(df.value.values) for df in at.dataframe)
-    assert "compra_por_usuario" in " ".join(str(df.value.values) for df in at.dataframe)  # modelagem exibida
+    assert "compra_por_usuario" in " ".join(t.value.to_string() for t in at.table)  # modelagem exibida (tabela que quebra linha)
 
 
 def test_grafo_desenha_nos_e_arestas_reais(pagina, semeado, monkeypatch):

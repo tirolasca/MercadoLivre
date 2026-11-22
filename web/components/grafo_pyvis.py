@@ -44,7 +44,27 @@ def gerar_html(nos: list[dict[str, Any]], arestas: list[dict[str, Any]], altura:
     for a in arestas:
         rede.add_edge(a["origem"], a["destino"], label=a["tipo"], title=a["tipo"])
     rede.set_options(json.dumps(_OPCOES))
-    return rede.generate_html()
+    return _ajustar_visual(rede.generate_html())
+
+
+# O desenho vive num iframe: o CSS do app não o alcança. Aqui alinhamos a moldura ao restante da interface
+# (sem a margem padrão do <body>) e, no modo escuro, trocamos fundo e cor dos rótulos (o texto é um <canvas>).
+_ESTILO = (
+    "<style>html,body{margin:0;background:transparent}"
+    ".card{border:0 !important;background:transparent !important}"
+    "#mynetwork{box-sizing:border-box;border:1px solid #e2e6f0 !important;border-radius:12px;background:#fff}"
+    "@media (prefers-color-scheme: dark){#mynetwork{background:#141930 !important;border-color:#262d4d !important}}</style>"
+)
+_SCRIPT_ESCURO = (
+    "<script>(function(){try{if(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches&&window.network){"
+    "network.setOptions({nodes:{font:{color:'#eceffa'}},edges:{font:{color:'#c3cae3',strokeWidth:3,strokeColor:'#141930'},"
+    "color:{color:'#5b668f',highlight:'#8db4ff',hover:'#8db4ff'}}});}}catch(e){}})();</script>"
+)
+
+
+def _ajustar_visual(html: str) -> str:
+    html = html.replace("</head>", _ESTILO + "</head>", 1)
+    return html.replace("</body>", _SCRIPT_ESCURO + "</body>", 1)
 
 
 def legenda_html() -> str:

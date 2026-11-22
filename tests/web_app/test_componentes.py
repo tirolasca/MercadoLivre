@@ -205,3 +205,46 @@ def test_paginador_com_uma_pagina_nao_mostra_botoes():
 
     assert at.text[0].value == "P1/1 inicio=0"
     assert not at.button
+
+
+def test_css_responsivo_icones_nao_encolhem_e_grade_segue_o_conteiner():
+    """Regressões vistas no navegador: ícone do cabeçalho espremido
+    (24x35 px) e grade de cards guiada pela largura da janela."""
+    css = (RAIZ / "web" / "styles" / "app.css").read_text(encoding="utf-8")
+    for seletor in (".ml-cabecalho .ico", ".ml-card .ico", ".ml-vazio .ico"):
+        regra = re.search(re.escape(seletor) + r" \{([^}]*)\}", css).group(1)
+        assert "flex: none" in regra, seletor
+    assert "container: cartoes / inline-size" in css
+    assert "@container cartoes" in css
+    # grade antiga por janela (gerava 4+2 cards no tablet)
+    assert "max-width: 900px" not in css
+    # quantidade ímpar em 2 colunas: o último card não fica órfão
+    assert "nth-child(odd) { grid-column: 1 / -1; }" in css
+
+
+def test_paginador_fica_dentro_de_conteiner_com_chave_para_o_css():
+    css = (RAIZ / "web" / "styles" / "app.css").read_text(encoding="utf-8")
+    assert "st-key-paginacao" in css
+    assert "flex-wrap: nowrap" in css
+
+
+def test_tabela_estatica_usa_a_primeira_coluna_como_rotulo():
+    at = _app(
+        "from web.components import cards\n"
+        'cards.tabela_estatica([{"a": "x", "b": "texto longo"}],'
+        ' {"a": "A", "b": "B"})'
+    )
+    assert len(at.table) == 1
+    assert at.table[0].value.index.tolist() == ["x"]
+    assert at.table[0].value["B"].tolist() == ["texto longo"]
+
+
+def test_grafo_html_alinha_moldura_e_trata_modo_escuro():
+    from web.components import grafo_pyvis
+
+    no = {"id": "a", "rotulo": "Usuario", "nome": "X", "propriedades": {}}
+    html = grafo_pyvis.gerar_html([no], [])
+    assert "html,body{margin:0" in html  # sem a margem de 8 px do iframe
+    assert "prefers-color-scheme: dark" in html
+    # rótulos claros aplicados depois de criar a rede
+    assert html.rfind("network.setOptions") > html.find("new vis.Network")

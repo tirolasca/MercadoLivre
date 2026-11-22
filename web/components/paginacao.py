@@ -22,9 +22,12 @@ def paginar(total: int, por_pagina: int, chave: str, assinatura: Any = None) -> 
     def _ir(delta: int) -> None:
         st.session_state[k_pag] = min(max(1, st.session_state[k_pag] + delta), paginas)
 
-    esquerda, centro, direita = st.columns([1, 2, 1], vertical_alignment="center")
-    esquerda.button("Anterior", key=f"ant_{chave}", icon=":material/chevron_left:", on_click=_ir, args=(-1,), disabled=pagina <= 1, width="stretch") if paginas > 1 else None
-    centro.markdown(f'<div class="ml-paginacao">{total} item(ns) · página <b>{pagina}</b> de <b>{paginas}</b></div>', unsafe_allow_html=True)
-    direita.button("Próxima", key=f"prox_{chave}", icon=":material/chevron_right:", icon_position="right", on_click=_ir, args=(1,), disabled=pagina >= paginas, width="stretch") if paginas > 1 else None
+    with st.container(key=f"paginacao_{chave}"):
+        esquerda, centro, direita = st.columns([1, 2, 1], vertical_alignment="center")
+        if paginas > 1:
+            esquerda.button("Anterior", key=f"ant_{chave}", icon=":material/chevron_left:", on_click=_ir, args=(-1,), disabled=pagina <= 1, width="stretch")
+        centro.markdown(f'<div class="ml-paginacao">{total} item(ns) · página <b>{pagina}</b> de <b>{paginas}</b></div>', unsafe_allow_html=True)
+        if paginas > 1:
+            direita.button("Próxima", key=f"prox_{chave}", icon=":material/chevron_right:", icon_position="right", on_click=_ir, args=(1,), disabled=pagina >= paginas, width="stretch")
     inicio = (pagina - 1) * por_pagina
     return pagina, paginas, slice(inicio, inicio + por_pagina)

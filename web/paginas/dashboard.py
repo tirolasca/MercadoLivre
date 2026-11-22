@@ -71,6 +71,7 @@ if mongo.ok:
             df = pd.DataFrame(mongo.dados["mais_vendidos"]).sort_values("vendidos")
             fig = px.bar(df, x="vendidos", y="titulo", orientation="h", color_discrete_sequence=[graficos.AZUL])
             fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x} unidade(s) vendida(s)<extra></extra>")
+            fig.update_xaxes(dtick=max(1, -(-int(df["vendidos"].max()) // 5)), tickformat="d")  # só números inteiros
             st.plotly_chart(graficos.estilizar(fig, titulo_x="Unidades vendidas"), width="stretch", config=graficos.CONFIG)
         else:
             cards.estado_vazio("Ainda não há vendas registradas", "Quando um pedido for criado, os produtos mais vendidos aparecem aqui.", "trending-up")
@@ -79,6 +80,7 @@ if mongo.ok:
         if mongo.dados["vendas_por_dia"]:
             df = pd.DataFrame(mongo.dados["vendas_por_dia"])
             df["receita"] = df["receita"].astype(float)
+            df["dia"] = pd.to_datetime(df["dia"]).dt.strftime("%d/%m")
             fig = px.bar(df, x="dia", y="receita", color_discrete_sequence=[graficos.AMBAR], custom_data=["pedidos"])
             fig.update_traces(hovertemplate="<b>%{x}</b><br>Receita: R$ %{y:,.2f}<br>Pedidos: %{customdata[0]}<extra></extra>")
             st.plotly_chart(graficos.estilizar(fig, titulo_y="R$"), width="stretch", config=graficos.CONFIG)

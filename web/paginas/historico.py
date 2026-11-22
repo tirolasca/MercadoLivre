@@ -57,7 +57,7 @@ with aba_compras:
 
 with aba_modelo:
     st.write("Cada consulta tem a sua tabela. O mesmo dado pode ser gravado em duas (denormalização): escrever é barato, consultar fica rápido.")
-    cards.tabela([{"t": t, "p": p, "c": c, "u": u} for t, p, c, u in historico.MODELAGEM], {"t": "Tabela", "p": "Partition key", "c": "Clustering key", "u": "Consulta que atende"})
+    cards.tabela_estatica([{"t": t, "p": p, "c": c, "u": u} for t, p, c, u in historico.MODELAGEM], {"t": "Tabela", "p": "Partition key", "c": "Clustering key", "u": "Consulta que atende"})
     st.markdown("**Consulta fora da chave:** o Cassandra recusa filtrar por um campo que não é chave, pois varreria o cluster inteiro.")
     if st.button("Tentar buscar produto por título"):
         r = historico.consulta_sem_chave("Teclado")
