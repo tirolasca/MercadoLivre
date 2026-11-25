@@ -61,6 +61,7 @@ A interface web utiliza os mesmos módulos de negócio da CLI. As regras de neg�
 | Vendedores | MongoDB | Consulta pública; gestão por administrador |
 | Usuários | MongoDB | Conforme papel e propriedade dos dados |
 | Pedidos | MongoDB | Usuário compra em seu nome; administrador gerencia |
+| Favoritos | MongoDB | Usuário gerencia os próprios favoritos; administrador gerencia os de qualquer usuário |
 | Sessões e cache | Redis e MongoDB | Conforme papel |
 | Histórico de compras | Cassandra | Catálogo público; compras próprias ou administração |
 | Grafo | Neo4j | Grafo público e dados restritos conforme autenticação |
@@ -402,15 +403,16 @@ A carga de dados pode criar registros persistentes nos serviços configurados. U
 
 Coleções principais:
 
-- `usuarios`
+- `usuarios` (guarda, dentro do próprio documento, os `enderecos` e os `favoritos`)
 - `vendedores`
 - `produtos`
-- `favoritos`
 - `pedidos`
 
-Os documentos podem referenciar outros registros por identificadores, como `id_vendedor`, `id_comprador` e `id_produto`. Consultas que precisam combinar coleções utilizam recursos de agregação, incluindo `$lookup`.
+Os favoritos ficam **dentro do documento do usuário**, como uma lista de `{id_produto, criado_em}`; o `$push` só acontece se o produto ainda não estiver na lista, então nada é duplicado. Os demais documentos referenciam outros registros por identificadores, como `id_vendedor`, `id_comprador` e `id_produto`. Consultas que precisam combinar coleções utilizam recursos de agregação, incluindo `$lookup`.
 
-Valores monetários são representados com `Decimal128`. Índices únicos protegem campos como CPF, CNPJ e nome da loja, além da combinação usuário/produto em favoritos. Há também índices para consultas frequentes.
+Valores monetários são representados com `Decimal128`. Índices únicos protegem campos como CPF, CNPJ e nome da loja, e um índice em `favoritos.id_produto` para localizar quem favoritou cada produto. Há também índices para consultas frequentes.
+
+> **Migração:** bancos criados com o modelo antigo (coleção `favoritos` separada) são convertidos automaticamente na próxima execução de `configurar_banco_dados()` (por exemplo, ao carregar os dados de demonstração). A conversão é idempotente: descarta duplicados e favoritos de usuários/produtos que não existem mais e remove a coleção antiga.
 
 **Por que MongoDB?** O catálogo possui documentos com atributos próprios e operações de cadastro, atualização e consulta. O modelo documental permite organizar esses dados sem exigir que todas as entidades tenham exatamente a mesma estrutura.
 

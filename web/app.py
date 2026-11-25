@@ -47,6 +47,7 @@ PAGINAS = [
     ("paginas/vendedores.py", "Vendedores", ":material/storefront:", "vendedores", Papel.VISITANTE),
     ("paginas/usuarios.py", "Usuários", ":material/group:", "usuarios", Papel.USUARIO),
     ("paginas/pedidos.py", "Pedidos", ":material/receipt_long:", "pedidos", Papel.USUARIO),
+    ("paginas/favoritos.py", "Favoritos", ":material/favorite:", "favoritos", Papel.USUARIO),
     ("paginas/sessoes.py", "Sessões e cache", ":material/bolt:", "sessoes", Papel.VISITANTE),
     ("paginas/historico.py", "Histórico de compras", ":material/history:", "historico", Papel.VISITANTE),
     ("paginas/grafo.py", "Grafo", ":material/hub:", "grafo", Papel.VISITANTE),

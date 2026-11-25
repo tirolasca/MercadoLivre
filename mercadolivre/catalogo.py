@@ -1,7 +1,7 @@
 """Catálogo, vendedores, favoritos e pedidos no MongoDB (menu interativo).
 
-Coleções: ``usuarios``, ``vendedores``, ``produtos``, ``favoritos`` e ``pedidos``.
-Relacionamentos por referência (``id_vendedor``, ``id_comprador``, ``id_produto``),
+Coleções: ``usuarios``, ``vendedores``, ``produtos`` e ``pedidos``. Endereços e favoritos moram
+DENTRO do documento do usuário. Relacionamentos por referência (``id_vendedor``, ``id_comprador``, ``id_produto``),
 consultados com ``$lookup``. Valores monetários usam ``Decimal128``.
 """
 
@@ -16,7 +16,7 @@ from typing import Any, Sequence
 
 import requests
 from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError, PyMongoError
+from pymongo.errors import PyMongoError
 from rich.columns import Columns
 from rich.table import Table
 
@@ -50,7 +50,7 @@ from .validadores import (
 
 RESUMO = [
     "Guarda DOCUMENTOS (parecidos com JSON) dentro de coleções, sem esquema fixo.",
-    "Aqui: catálogo, favoritos e pedidos. Um usuário guarda seus endereços DENTRO do próprio documento.",
+    "Aqui: catálogo e pedidos. Um usuário guarda seus endereços e favoritos DENTRO do próprio documento.",
     "Relacionamentos por referência (id_vendedor) e consulta com $lookup, o 'JOIN' do MongoDB.",
     "A baixa de estoque é atômica: update_one só decrementa se ainda houver saldo.",
 ]
@@ -398,43 +398,35 @@ def exportar_produtos_csv() -> None:
 # ============================================================================
 # Favoritos
 # ============================================================================
-def _favoritos_do_usuario(usuario: dict[str, Any]) -> list[dict[str, Any]]:
-    pipeline = [
-        {"$match": {"id_usuario": usuario["_id"]}},
-        {"$lookup": {"from": "produtos", "localField": "id_produto", "foreignField": "_id", "as": "prod"}},
-        {"$unwind": "$prod"},
-        {"$sort": {"prod.titulo": ASCENDING}},
-    ]
-    return list(colecao("favoritos").aggregate(pipeline))
-
-
 def adicionar_favorito() -> None:
     if not (u := selecionar_usuario()) or not (p := selecionar_produto()):
         return
     try:
-        colecao("favoritos").insert_one({"id_usuario": u["_id"], "id_produto": p["_id"], "criado_em": agora_utc()})
-        ui.sucesso(f"'{p['titulo']}' adicionado aos favoritos de {u['nome']}.")
-    except DuplicateKeyError:
-        ui.aviso("Este produto já está nos favoritos.")
+        if dados.adicionar_favorito(u["_id"], p["_id"]):
+            ui.sucesso(f"'{p['titulo']}' adicionado aos favoritos de {u['nome']}.")
+        else:
+            ui.aviso("Este produto já está nos favoritos.")
+    except ErroNegocio as exc:
+        ui.erro(str(exc))
 
 
 def listar_favoritos() -> None:
     if not (u := selecionar_usuario()):
         return
-    linhas = [(f["prod"]["titulo"], formatar_moeda(f["prod"]["preco"]), formatar_data(f["criado_em"])) for f in _favoritos_do_usuario(u)]
+    linhas = [(f["produto"]["titulo"], formatar_moeda(f["produto"]["preco"]), formatar_data(f["criado_em"])) for f in dados.listar_favoritos(u["_id"])]
     ui.tabela(f"Favoritos de {u['nome']}", ["Produto", ("Preço", "right"), "Favoritado em"], linhas, "Nenhum favorito cadastrado.")
 
 
 def remover_favorito() -> None:
     if not (u := selecionar_usuario()):
         return
-    favoritos = _favoritos_do_usuario(u)
+    favoritos = dados.listar_favoritos(u["_id"])
     if not favoritos:
         ui.aviso("Nenhum favorito cadastrado.")
         return
-    escolhido = ui.selecionar("Qual favorito remover?", [(f["prod"]["titulo"], f) for f in favoritos], filtro=True)
+    escolhido = ui.selecionar("Qual favorito remover?", [(f["produto"]["titulo"], f) for f in favoritos], filtro=True)
     if escolhido:
-        colecao("favoritos").delete_one({"_id": escolhido["_id"]})
+        dados.remover_favorito(u["_id"], escolhido["id_produto"])
         ui.sucesso("Favorito removido.")
 
 

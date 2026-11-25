@@ -76,8 +76,9 @@ def configurar_banco_dados() -> None:
     colecao("usuarios").create_indexes([idx([("cpf", ASCENDING)], unique=True), idx([("nome", ASCENDING), ("sobrenome", ASCENDING)])])
     colecao("vendedores").create_indexes([idx([("cnpj", ASCENDING)], unique=True), idx([("nome_loja", ASCENDING)], unique=True)])
     colecao("produtos").create_indexes([idx([("titulo", ASCENDING)]), idx([("id_categoria", ASCENDING)]), idx([("id_vendedor", ASCENDING)])])
-    colecao("favoritos").create_indexes([idx([("id_usuario", ASCENDING), ("id_produto", ASCENDING)], unique=True)])
+    colecao("usuarios").create_indexes([idx([("favoritos.id_produto", ASCENDING)])])
     colecao("pedidos").create_indexes([idx([("id_comprador", ASCENDING)]), idx([("criado_em", DESCENDING)])])
+    migrar_favoritos()
 
 
 def _trecho(termo: str | None) -> dict[str, Any] | None:
@@ -95,6 +96,7 @@ def inserir_usuario(nome: str, sobrenome: str, cpf: str, email: str) -> dict[str
         "cpf": validar_cpf(cpf),
         "email": validar_email(email),
         "enderecos": [],
+        "favoritos": [],
         "criado_em": agora_utc(),
         "atualizado_em": agora_utc(),
     }
@@ -140,8 +142,7 @@ def excluir_usuario(id_usuario: ObjectId | str) -> None:
     _id = como_objectid(id_usuario)
     if colecao("pedidos").find_one({"id_comprador": _id}):
         raise ErroNegocio("Não é possível excluir: o usuário possui pedidos vinculados.")
-    colecao("favoritos").delete_many({"id_usuario": _id})
-    colecao("usuarios").delete_one({"_id": _id})
+    colecao("usuarios").delete_one({"_id": _id})  # os favoritos moram dentro do documento e saem junto
 
 
 def adicionar_endereco(id_usuario: ObjectId | str, cep: str, rua: str, numero: str, bairro: str, cidade: str, estado: str, complemento: str = "") -> dict[str, str]:
@@ -162,6 +163,82 @@ def adicionar_endereco(id_usuario: ObjectId | str, cep: str, rua: str, numero: s
     if res.matched_count != 1:
         raise ErroNegocio("Usuário não encontrado.")
     return endereco
+
+
+# ----------------------------------------------------------------------------
+# Favoritos (moram DENTRO do documento do usuário, como os endereços)
+# ----------------------------------------------------------------------------
+def adicionar_favorito(id_usuario: ObjectId | str, id_produto: ObjectId | str) -> bool:
+    """Favorita um produto. Devolve ``False`` se ele já estava na lista (nada é duplicado)."""
+    uid, pid = como_objectid(id_usuario), como_objectid(id_produto)
+    if colecao("produtos").find_one({"_id": pid}, {"_id": 1}) is None:
+        raise ErroNegocio("Produto não encontrado.")
+    # O filtro só casa se o produto ainda NÃO está na lista: a checagem e o $push são um único passo atômico.
+    res = colecao("usuarios").update_one(
+        {"_id": uid, "favoritos.id_produto": {"$ne": pid}},
+        {"$push": {"favoritos": {"id_produto": pid, "criado_em": agora_utc()}}, "$set": {"atualizado_em": agora_utc()}},
+    )
+    if res.matched_count == 1:
+        return True
+    if colecao("usuarios").find_one({"_id": uid}, {"_id": 1}) is None:
+        raise ErroNegocio("Usuário não encontrado.")
+    return False
+
+
+def remover_favorito(id_usuario: ObjectId | str, id_produto: ObjectId | str) -> bool:
+    """Tira o produto dos favoritos. Devolve ``False`` se ele não estava na lista."""
+    uid, pid = como_objectid(id_usuario), como_objectid(id_produto)
+    if colecao("usuarios").find_one({"_id": uid}, {"_id": 1}) is None:
+        raise ErroNegocio("Usuário não encontrado.")
+    res = colecao("usuarios").update_one(
+        {"_id": uid, "favoritos.id_produto": pid},
+        {"$pull": {"favoritos": {"id_produto": pid}}, "$set": {"atualizado_em": agora_utc()}},
+    )
+    return res.modified_count == 1
+
+
+def listar_favoritos(id_usuario: ObjectId | str) -> list[dict[str, Any]]:
+    """Favoritos do usuário com os dados do produto e da loja anexados (``$lookup``), em ordem alfabética."""
+    pipeline: list[dict[str, Any]] = [
+        {"$match": {"_id": como_objectid(id_usuario)}},
+        {"$unwind": "$favoritos"},
+        {"$replaceRoot": {"newRoot": "$favoritos"}},
+        {"$lookup": {"from": "produtos", "localField": "id_produto", "foreignField": "_id", "as": "produto"}},
+        {"$unwind": "$produto"},  # favorito de produto que já não existe é ignorado
+        {"$lookup": {"from": "vendedores", "localField": "produto.id_vendedor", "foreignField": "_id", "as": "vendedor"}},
+        {"$unwind": {"path": "$vendedor", "preserveNullAndEmptyArrays": True}},
+        {"$sort": {"produto.titulo": ASCENDING}},
+    ]
+    return list(colecao("usuarios").aggregate(pipeline))
+
+
+def contar_favoritos() -> int:
+    """Total de favoritos de todos os usuários (soma do tamanho de cada lista, calculada no MongoDB)."""
+    pipeline = [{"$group": {"_id": None, "total": {"$sum": {"$size": {"$ifNull": ["$favoritos", []]}}}}}]
+    for doc in colecao("usuarios").aggregate(pipeline):
+        return int(doc["total"])
+    return 0
+
+
+def migrar_favoritos() -> int:
+    """Move a coleção ``favoritos`` (modelo antigo) para dentro de cada usuário e a remove.
+
+    Idempotente: sem a coleção antiga não faz nada. Devolve quantos favoritos foram migrados.
+    Favoritos de usuário ou produto que não existem mais são descartados.
+    """
+    if "favoritos" not in mongo_db().list_collection_names():
+        return 0
+    migrados = 0
+    for antigo in colecao("favoritos").find():
+        if colecao("produtos").find_one({"_id": antigo["id_produto"]}, {"_id": 1}) is None:
+            continue
+        res = colecao("usuarios").update_one(
+            {"_id": antigo["id_usuario"], "favoritos.id_produto": {"$ne": antigo["id_produto"]}},
+            {"$push": {"favoritos": {"id_produto": antigo["id_produto"], "criado_em": antigo.get("criado_em") or agora_utc()}}},
+        )
+        migrados += res.modified_count
+    colecao("favoritos").drop()
+    return migrados
 
 
 # ----------------------------------------------------------------------------
@@ -312,7 +389,7 @@ def excluir_produto(id_produto: ObjectId | str) -> None:
     _id = como_objectid(id_produto)
     if colecao("pedidos").find_one({"itens.id_produto": _id}):
         raise ErroNegocio("Não é possível excluir: o produto possui histórico de pedidos.")
-    colecao("favoritos").delete_many({"id_produto": _id})
+    colecao("usuarios").update_many({"favoritos.id_produto": _id}, {"$pull": {"favoritos": {"id_produto": _id}}})
     colecao("produtos").delete_one({"_id": _id})
 
 
@@ -405,7 +482,9 @@ def receita_total() -> Decimal:
 
 
 def contagens() -> dict[str, int]:
-    return {nome: colecao(nome).count_documents({}) for nome in ("usuarios", "vendedores", "produtos", "pedidos", "favoritos")}
+    total = {nome: colecao(nome).count_documents({}) for nome in ("usuarios", "vendedores", "produtos", "pedidos")}
+    total["favoritos"] = contar_favoritos()
+    return total
 
 
 def mais_vendidos(limite: int = 5) -> list[dict[str, Any]]:
@@ -440,7 +519,7 @@ def carregar_demonstracao() -> None:
     for cpf, nome, sobrenome, email in dados_demo.USUARIOS:
         colecao("usuarios").update_one(
             {"cpf": cpf},
-            {"$setOnInsert": {"nome": nome, "sobrenome": sobrenome, "email": email, "enderecos": [], "criado_em": agora, "atualizado_em": agora}},
+            {"$setOnInsert": {"nome": nome, "sobrenome": sobrenome, "email": email, "enderecos": [], "favoritos": [], "criado_em": agora, "atualizado_em": agora}},
             upsert=True,
         )
     ids_vendedor = {}

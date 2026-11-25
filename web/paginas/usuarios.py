@@ -9,7 +9,7 @@ from web.components import cards
 from web.components.feedback import pedir_confirmacao, resposta
 from web.components.layout import abrir_pagina
 from web.services import catalogo
-from web.utils.formatacao import data_hora, formatar_cpf
+from web.utils.formatacao import data_hora, formatar_cpf, moeda
 
 ator = abrir_pagina("Usuários", "Cadastro de compradores (MongoDB).", minimo=Papel.USUARIO, icone="users")
 admin = tem(ator, Papel.ADMIN)
@@ -34,6 +34,14 @@ if usuarios:
     u = st.selectbox("Usuário", usuarios, format_func=lambda x: f"{x['nome']} {x['sobrenome']}", key="detalhe_usuario")
     st.markdown(f"**{u['nome']} {u['sobrenome']}** · CPF {formatar_cpf(u['cpf'])} · {u['email']}")
     cards.tabela(u["enderecos"], {"rua": "Rua", "numero": "Nº", "bairro": "Bairro", "cidade": "Cidade", "estado": "UF", "cep": "CEP"}, "Nenhum endereço cadastrado.")
+
+    st.markdown("**Favoritos**")
+    favs = catalogo.listar_favoritos(ator, u["id"])
+    if not cards.erro_resultado("MongoDB", favs):
+        cards.tabela(
+            [{**f, "preco": moeda(f["preco"]), "desde": data_hora(f["favoritado_em"])} for f in favs.dados],
+            {"titulo": "Produto", "preco": "Preço", "loja": "Loja", "desde": "Favoritado em"}, "Nenhum favorito cadastrado.",
+        )
 
 if not admin:
     st.stop()

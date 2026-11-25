@@ -284,3 +284,28 @@ def test_so_admin_reinicia_conexoes(monkeypatch, ator):
     assert chamadas == []
     diagnostico.reiniciar_conexoes(ator("admin"))
     assert chamadas == [1]
+
+
+# ----------------------------------------------------------------------------
+# Favoritos: o dono gerencia os seus; o admin, os de qualquer um; visitante nada
+# ----------------------------------------------------------------------------
+def test_usuario_favorita_para_si_e_nao_para_outro(semeado, ator):
+    ana, beto, produto = str(semeado["ana"]["_id"]), str(semeado["beto"]["_id"]), str(semeado["produto"]["_id"])
+    assert catalogo.favoritar(ator("ana"), ana, produto).dados is True
+    assert catalogo.favoritar(ator("ana"), ana, produto).dados is False  # já era favorito
+    negado = catalogo.favoritar(ator("ana"), beto, produto)
+    assert not negado.ok and "próprios favoritos" in negado.erro
+    assert not catalogo.listar_favoritos(ator("ana"), beto).ok
+    assert [f["titulo"] for f in catalogo.listar_favoritos(ator("ana"), ana).dados] == ["Teclado"]
+    assert catalogo.desfavoritar(ator("ana"), ana, produto).dados is True
+    assert catalogo.listar_favoritos(ator("ana"), ana).dados == []
+
+
+def test_admin_gerencia_favoritos_de_qualquer_usuario_e_visitante_nao_entra(semeado, ator):
+    beto, produto = str(semeado["beto"]["_id"]), str(semeado["produto"]["_id"])
+    assert catalogo.favoritar(ator("admin"), beto, produto).ok
+    listados = catalogo.listar_usuarios(ator("admin")).dados
+    assert [u["favoritos"] for u in listados if u["id"] == beto] == [[produto]]
+    from web.auth.permissoes import VISITANTE
+    assert not catalogo.favoritar(VISITANTE, beto, produto).ok
+    assert not catalogo.listar_favoritos(VISITANTE, beto).ok

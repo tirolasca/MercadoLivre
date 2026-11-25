@@ -1,4 +1,4 @@
-"""Serviço do MongoDB (catálogo, usuários, vendedores e pedidos) para a web.
+"""Serviço do MongoDB (catálogo, usuários, favoritos, vendedores e pedidos) para a web.
 
 Reaproveita ``mercadolivre.catalogo_dados`` (a mesma regra da CLI), acrescentando:
 checagem de papel em cada operação, conversão de tipos do BSON e mascaramento de
@@ -36,7 +36,12 @@ def _usuario(u: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": id_texto(u["_id"]), "nome": u["nome"], "sobrenome": u["sobrenome"], "cpf": u["cpf"], "email": u["email"],
         "enderecos": u.get("enderecos", []), "criado_em": u.get("criado_em"),
+        "favoritos": [id_texto(f["id_produto"]) for f in u.get("favoritos", [])],
     }
+
+
+def _favorito(f: dict[str, Any]) -> dict[str, Any]:
+    return _produto({**f["produto"], "vendedor": f.get("vendedor")}) | {"favoritado_em": f.get("criado_em")}
 
 
 def _vendedor(v: dict[str, Any]) -> dict[str, Any]:
@@ -149,6 +154,41 @@ def adicionar_endereco(ator: Ator, id_usuario: str, **campos: str) -> Resultado[
     def op() -> None:
         exigir(ator, Papel.ADMIN)
         dados.adicionar_endereco(id_usuario, **campos)
+    return executar(BANCO, op)
+
+
+# ----------------------------------------------------------------------------
+# Favoritos (dentro do documento do usuário: o dono gerencia os seus; o admin, os de qualquer um)
+# ----------------------------------------------------------------------------
+def _exigir_dono_do_favorito(ator: Ator, id_usuario: str) -> None:
+    exigir(ator, Papel.USUARIO)
+    if tem(ator, Papel.ADMIN):
+        return
+    proprio = _usuario_do_ator(ator)
+    if proprio is None or id_texto(proprio["_id"]) != id_usuario:
+        raise ErroNegocio("Você só pode gerenciar os seus próprios favoritos.")
+
+
+def listar_favoritos(ator: Ator, id_usuario: str) -> Resultado[list[dict[str, Any]]]:
+    def op() -> list[dict[str, Any]]:
+        _exigir_dono_do_favorito(ator, id_usuario)
+        return [_favorito(f) for f in dados.listar_favoritos(id_usuario)]
+    return executar(BANCO, op)
+
+
+def favoritar(ator: Ator, id_usuario: str, id_produto: str) -> Resultado[bool]:
+    """``True`` se favoritou agora; ``False`` se já estava na lista."""
+    def op() -> bool:
+        _exigir_dono_do_favorito(ator, id_usuario)
+        return dados.adicionar_favorito(id_usuario, id_produto)
+    return executar(BANCO, op)
+
+
+def desfavoritar(ator: Ator, id_usuario: str, id_produto: str) -> Resultado[bool]:
+    """``True`` se removeu; ``False`` se o produto não estava na lista."""
+    def op() -> bool:
+        _exigir_dono_do_favorito(ator, id_usuario)
+        return dados.remover_favorito(id_usuario, id_produto)
     return executar(BANCO, op)
 
 
