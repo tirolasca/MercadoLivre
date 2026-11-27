@@ -61,6 +61,7 @@ A interface web utiliza os mesmos módulos de negócio da CLI. As regras de neg�
 | Vendedores | MongoDB | Consulta pública; gestão por administrador |
 | Usuários | MongoDB | Conforme papel e propriedade dos dados |
 | Pedidos | MongoDB | Usuário compra em seu nome; administrador gerencia |
+| Favoritos | MongoDB | Usuário gerencia os próprios favoritos; administrador gerencia os de qualquer usuário |
 | Sessões e cache | Redis e MongoDB | Conforme papel |
 | Histórico de compras | Cassandra | Catálogo público; compras próprias ou administração |
 | Grafo | Neo4j | Grafo público e dados restritos conforme autenticação |
@@ -181,21 +182,21 @@ source .venv/bin/activate
 Para executar **CLI e interface web**:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+py -m pip install --upgrade pip
+py -m pip install -r requirements.txt
 ```
 
 Para instalar somente a **CLI e o núcleo de negócio**:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements-cli.txt
+py -m pip install --upgrade pip
+py -m pip install -r requirements-cli.txt
 ```
 
 Para instalar também as ferramentas de **testes e desenvolvimento**:
 
 ```bash
-python -m pip install -r requirements-dev.txt
+py -m pip install -r requirements-dev.txt
 ```
 
 > `requirements.txt` já inclui `requirements-cli.txt`. `requirements-dev.txt` inclui `requirements.txt` e acrescenta as dependências de testes. Não é necessário instalar os três arquivos em sequência.
@@ -203,9 +204,9 @@ python -m pip install -r requirements-dev.txt
 ### 4. Conferir a instalação
 
 ```bash
-python --version
-python -m pip --version
-python -m pip check
+py --version
+py -m pip --version
+py -m pip check
 ```
 
 O comando `pip check` verifica conflitos entre dependências instaladas.
@@ -324,7 +325,7 @@ No Windows, os mesmos comandos funcionam no PowerShell com o ambiente virtual at
 ### Ordem sugerida para a primeira demonstração
 
 1. Configure as credenciais dos bancos que serão demonstrados.
-2. Execute `python -m mercadolivre.diagnostico` para verificar as conexões.
+2. Execute `py -m mercadolivre.diagnostico` para verificar as conexões.
 3. Abra o catálogo e cadastre um vendedor e produtos ou utilize a opção de dados de demonstração.
 4. Abra sessões e cache, faça login e demonstre o fluxo MongoDB → Redis → MongoDB.
 5. Prepare o keyspace/tabelas do Cassandra pelo módulo de histórico e carregue os dados de demonstração.
@@ -352,7 +353,7 @@ A interface web utiliza Streamlit e os mesmos módulos de negócio da CLI.
 Se ainda não instalou as dependências completas:
 
 ```bash
-python -m pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
 
 ### 2. Configurar o ambiente de desenvolvimento
@@ -402,15 +403,16 @@ A carga de dados pode criar registros persistentes nos serviços configurados. U
 
 Coleções principais:
 
-- `usuarios`
+- `usuarios` (guarda, dentro do próprio documento, os `enderecos` e os `favoritos`)
 - `vendedores`
 - `produtos`
-- `favoritos`
 - `pedidos`
 
-Os documentos podem referenciar outros registros por identificadores, como `id_vendedor`, `id_comprador` e `id_produto`. Consultas que precisam combinar coleções utilizam recursos de agregação, incluindo `$lookup`.
+Os favoritos ficam **dentro do documento do usuário**, como uma lista de `{id_produto, criado_em}`; o `$push` só acontece se o produto ainda não estiver na lista, então nada é duplicado. Os demais documentos referenciam outros registros por identificadores, como `id_vendedor`, `id_comprador` e `id_produto`. Consultas que precisam combinar coleções utilizam recursos de agregação, incluindo `$lookup`.
 
-Valores monetários são representados com `Decimal128`. Índices únicos protegem campos como CPF, CNPJ e nome da loja, além da combinação usuário/produto em favoritos. Há também índices para consultas frequentes.
+Valores monetários são representados com `Decimal128`. Índices únicos protegem campos como CPF, CNPJ e nome da loja, e um índice em `favoritos.id_produto` para localizar quem favoritou cada produto. Há também índices para consultas frequentes.
+
+> **Migração:** bancos criados com o modelo antigo (coleção `favoritos` separada) são convertidos automaticamente na próxima execução de `configurar_banco_dados()` (por exemplo, ao carregar os dados de demonstração). A conversão é idempotente: descarta duplicados e favoritos de usuários/produtos que não existem mais e remove a coleção antiga.
 
 **Por que MongoDB?** O catálogo possui documentos com atributos próprios e operações de cadastro, atualização e consulta. O modelo documental permite organizar esses dados sem exigir que todas as entidades tenham exatamente a mesma estrutura.
 
@@ -502,7 +504,7 @@ py -m pytest tests/test_validadores.py
 ### Executar os testes da interface web
 
 ```bash
-python -m pytest tests/web_app/
+py -m pytest tests/web_app/
 ```
 
 A suíte web cobre configuração, autenticação, componentes, páginas e serviços. Os testes de páginas utilizam `streamlit.testing.v1.AppTest`.
@@ -606,7 +608,7 @@ MercadoLivre/
 Para conferir conflitos entre pacotes:
 
 ```bash
-python -m pip check
+py -m pip check
 ```
 
 Para conferir quais arquivos estão sendo rastreados pelo Git e evitar publicar segredos:

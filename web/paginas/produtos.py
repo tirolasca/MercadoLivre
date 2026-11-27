@@ -50,6 +50,20 @@ if produtos:
     st.markdown(f"**{escolhido['titulo']}** · {moeda(escolhido['preco'])} · {escolhido['estoque']} em estoque · loja **{escolhido['loja']}**")
     st.write(escolhido["descricao"] or "_Sem descrição._")
 
+    # Favoritar: a lista fica dentro do documento do usuário (visitante não tem cadastro, então não vê o botão).
+    if tem(ator, Papel.USUARIO):
+        quem = catalogo.listar_usuarios(ator)
+        if not quem.ok:
+            cards.erro_resultado("MongoDB", quem)
+        elif quem.dados:
+            dono = st.selectbox("Favoritar para", quem.dados, format_func=lambda u: f"{u['nome']} {u['sobrenome']}", key="fav_dono") if admin else quem.dados[0]
+            ja = escolhido["id"] in dono["favoritos"]
+            rotulo = "Nos favoritos — remover" if ja else "Favoritar"
+            if st.button(rotulo, key=f"{'fav-ativo' if ja else 'fav-inativo'}-{escolhido['id']}", icon=":material/favorite:"):
+                acao = catalogo.desfavoritar if ja else catalogo.favoritar
+                if resposta("MongoDB", acao(ator, dono["id"], escolhido["id"]), "Removido dos favoritos." if ja else "Adicionado aos favoritos."):
+                    st.rerun()
+
 if not admin:
     st.caption("O cadastro e a edição de produtos são feitos por administradores.")
     st.stop()

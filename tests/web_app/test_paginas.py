@@ -11,7 +11,7 @@ from web.services import historico as svc_historico
 
 from .conftest import SENHA
 
-PAGINAS = ["dashboard", "produtos", "vendedores", "usuarios", "pedidos", "sessoes", "historico", "grafo", "diagnostico"]
+PAGINAS = ["dashboard", "produtos", "vendedores", "usuarios", "pedidos", "favoritos", "sessoes", "historico", "grafo", "diagnostico"]
 
 
 def por_rotulo(lista, rotulo, n=0):
@@ -34,7 +34,7 @@ def test_pagina_abre_sem_excecao(pagina, semeado, token, pg, quem):
 
 
 def test_paginas_restritas_pedem_login_ao_visitante(pagina, semeado):
-    for pg in ("usuarios", "pedidos"):
+    for pg in ("usuarios", "pedidos", "favoritos"):
         at = pagina(pg)
         assert any("exige login" in w.value for w in at.warning)
         assert not at.tabs and not at.dataframe  # nada de dados atrás da trava
@@ -288,3 +288,38 @@ def test_admin_carrega_demonstracao_do_mongo_e_repetir_nao_duplica(pagina, mongo
 
 def test_usuario_comum_nao_ve_o_botao_de_demonstracao(pagina, semeado, token):
     assert "Carregar dados de demonstração (MongoDB)" not in [b.label for b in pagina("produtos", token("ana")).button]
+
+
+# ----------------------------------------------------------------------------
+# Favoritos pela interface
+# ----------------------------------------------------------------------------
+def test_usuario_favorita_e_desfavorita_pela_pagina_de_produtos(pagina, semeado, token, mongo):
+    at = pagina("produtos", token("ana"))
+    por_rotulo(at.button, "Favoritar").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    ana = mongo["usuarios"].find_one({"email": "ana@exemplo.com"})
+    assert [f["id_produto"] for f in ana["favoritos"]] == [semeado["produto"]["_id"]]  # dentro do documento dela
+    assert mongo["usuarios"].find_one({"email": "beto@exemplo.com"})["favoritos"] == []
+    por_rotulo(at.button, "Nos favoritos — remover").click().run()
+    assert mongo["usuarios"].find_one({"email": "ana@exemplo.com"})["favoritos"] == []
+
+
+def test_visitante_nao_ve_o_botao_de_favoritar(pagina, semeado):
+    assert not [b for b in pagina("produtos").button if "avorit" in b.label]
+
+
+def test_pagina_favoritos_lista_e_remove(pagina, semeado, token, mongo):
+    catalogo_dados.adicionar_favorito(semeado["ana"]["_id"], semeado["produto"]["_id"])
+    at = pagina("favoritos", token("ana"))
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("ml-fav" in m.value and "Teclado" in m.value for m in at.markdown)
+    por_rotulo(at.button, "Remover dos favoritos").click().run()
+    assert mongo["usuarios"].find_one({"email": "ana@exemplo.com"})["favoritos"] == []
+    assert "Nenhum favorito ainda" in textos(at)
+
+
+def test_detalhe_do_usuario_mostra_os_favoritos(pagina, semeado, token):
+    catalogo_dados.adicionar_favorito(semeado["ana"]["_id"], semeado["produto"]["_id"])
+    at = pagina("usuarios", token("ana"))
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("Favoritos" in m.value for m in at.markdown)

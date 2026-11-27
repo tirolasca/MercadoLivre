@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from web.components import icones
-from web.utils.formatacao import texto
+from web.utils.formatacao import data_hora, moeda, texto
 
 
 def cabecalho(titulo: str, subtitulo: str = "", icone: str | None = None) -> None:
@@ -33,6 +33,24 @@ def cards(itens: list[dict[str, Any]]) -> None:
         html.append(
             f'<div class="{" ".join(classes)}"><div class="topo"><span class="rotulo">{texto(it["rotulo"])}</span>{ico}</div>'
             f'<div class="valor">{valor}</div>{nota}</div>'
+        )
+    html.append("</div>")
+    st.markdown("".join(html), unsafe_allow_html=True)
+
+
+def favoritos(itens: list[dict[str, Any]]) -> None:
+    """Grade de produtos favoritos. Cada item: ``titulo``, ``categoria``, ``loja``, ``preco``, ``estoque`` e ``favoritado_em``."""
+    html = ['<div class="ml-favs">']
+    for i, it in enumerate(itens):
+        disponivel = it.get("estoque", 0) > 0 and it.get("status") == "ativo"
+        situacao = selo("Em estoque", "ok") if disponivel else selo("Indisponível", "aviso")
+        html.append(
+            f'<div class="ml-fav" style="--i:{i}"><div class="topo"><span class="cat">{texto(it.get("categoria"))}</span>'
+            f'<span class="coracao" aria-hidden="true">{icones.svg("heart", 16)}</span></div>'
+            f'<div class="titulo">{texto(it["titulo"])}</div>'
+            f'<div class="loja">{icones.svg("store", 14)}<span>{texto(it.get("loja"))}</span></div>'
+            f'<div class="rodape"><span class="preco">{texto(moeda(it["preco"]))}</span>{situacao}</div>'
+            f'<div class="desde">Favoritado em {texto(data_hora(it.get("favoritado_em")))}</div></div>'
         )
     html.append("</div>")
     st.markdown("".join(html), unsafe_allow_html=True)
