@@ -182,21 +182,21 @@ source .venv/bin/activate
 Para executar **CLI e interface web**:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+py -m pip install --upgrade pip
+py -m pip install -r requirements.txt
 ```
 
 Para instalar somente a **CLI e o núcleo de negócio**:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements-cli.txt
+py -m pip install --upgrade pip
+py -m pip install -r requirements-cli.txt
 ```
 
 Para instalar também as ferramentas de **testes e desenvolvimento**:
 
 ```bash
-python -m pip install -r requirements-dev.txt
+py -m pip install -r requirements-dev.txt
 ```
 
 > `requirements.txt` já inclui `requirements-cli.txt`. `requirements-dev.txt` inclui `requirements.txt` e acrescenta as dependências de testes. Não é necessário instalar os três arquivos em sequência.
@@ -204,9 +204,9 @@ python -m pip install -r requirements-dev.txt
 ### 4. Conferir a instalação
 
 ```bash
-python --version
-python -m pip --version
-python -m pip check
+py --version
+py -m pip --version
+py -m pip check
 ```
 
 O comando `pip check` verifica conflitos entre dependências instaladas.
@@ -325,7 +325,7 @@ No Windows, os mesmos comandos funcionam no PowerShell com o ambiente virtual at
 ### Ordem sugerida para a primeira demonstração
 
 1. Configure as credenciais dos bancos que serão demonstrados.
-2. Execute `python -m mercadolivre.diagnostico` para verificar as conexões.
+2. Execute `py -m mercadolivre.diagnostico` para verificar as conexões.
 3. Abra o catálogo e cadastre um vendedor e produtos ou utilize a opção de dados de demonstração.
 4. Abra sessões e cache, faça login e demonstre o fluxo MongoDB → Redis → MongoDB.
 5. Prepare o keyspace/tabelas do Cassandra pelo módulo de histórico e carregue os dados de demonstração.
@@ -353,7 +353,7 @@ A interface web utiliza Streamlit e os mesmos módulos de negócio da CLI.
 Se ainda não instalou as dependências completas:
 
 ```bash
-python -m pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
 
 ### 2. Configurar o ambiente de desenvolvimento
@@ -504,7 +504,7 @@ py -m pytest tests/test_validadores.py
 ### Executar os testes da interface web
 
 ```bash
-python -m pytest tests/web_app/
+py -m pytest tests/web_app/
 ```
 
 A suíte web cobre configuração, autenticação, componentes, páginas e serviços. Os testes de páginas utilizam `streamlit.testing.v1.AppTest`.
@@ -608,7 +608,7 @@ MercadoLivre/
 Para conferir conflitos entre pacotes:
 
 ```bash
-python -m pip check
+py -m pip check
 ```
 
 Para conferir quais arquivos estão sendo rastreados pelo Git e evitar publicar segredos:
