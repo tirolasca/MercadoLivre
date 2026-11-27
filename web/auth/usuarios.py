@@ -38,7 +38,7 @@ def _validar(bruto: dict[str, Any]) -> ContaWeb | None:
     papel = str(bruto.get("papel", "usuario")).strip().lower()
     senha_hash = str(bruto.get("senha_hash", ""))
     if not usuario or papel not in (Papel.USUARIO.value, Papel.ADMIN.value) or not senha_hash.startswith("pbkdf2_sha256$"):
-        log.warning("Conta web ignorada: campos inválidos (usuario=%r).", usuario)
+        log.warning("Conta web ignorada: campos inválidos.")
         return None
     email = str(bruto.get("email", "")).strip().lower() or None
     return ContaWeb(usuario, Papel(papel), senha_hash, email)
